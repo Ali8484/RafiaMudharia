@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>لعبة النحو البطل: الأفعال المضارعة</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none; /* منع تحديد النصوص أثناء اللعب */
+        }
+
+        body {
+            background: linear-gradient(145deg, #0f172a 0%, #0a0f1f 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', 'Tahoma', 'Cairo', 'Amiri', system-ui, -apple-system, sans-serif;
+            padding: 1.5rem;
+        }
+
+        /* الحاوية الرئيسية للعبة */
+        .game-container {
+            max-width: 1100px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(2px);
+            border-radius: 2.5rem;
+            padding: 1.5rem;
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255,255,255,0.1);
+            transition: all 0.3s ease;
+        }
+
+        /* رأس اللعبة - عنوان بخلفية #21417b */
+        .game-header {
+            background-color: #21417b;
+            border-radius: 2rem;
+            padding: 1.2rem 1.5rem;
+            text-align: center;
+            margin-bottom: 1.8rem;
+            box-shadow: 0 8px 0 #0f2a4d;
+        }
+
+        .game-header h1 {
+            color: #ffea9e;
+            font-size: 1.9rem;
+            letter-spacing: 1px;
+            text-shadow: 2px 2px 0 #0e2a4e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .game-header h1 span {
+            font-size: 2rem;
+        }
+
+        /* منطقة التوجيهات + النتيجة + المؤقت */
+        .info-panel {
+            background-color: #1e293b;   /* خلفية التوجيهات باللون المطلوب */
+            border-radius: 1.8rem;
+            padding: 1rem 1.5rem;
+            margin-bottom: 2rem;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            color: white;
+            box-shadow: 0 6px 0 #0f172a;
+        }
+
+        .score-box, .q-counter, .timer-box {
+            background: #0f172a;
+            padding: 0.4rem 1rem;
+            border-radius: 3rem;
+            font-weight: bold;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .score-box span:first-child, .q-counter span:first-child, .timer-box span:first-child {
+            color: #ffea9e;
+        }
+
+        .score-value, .current-q, .timer-value {
+            color: #ffea9e;
+            font-size: 1.7rem;
+            font-weight: 800;
+            margin-left: 6px;
+            direction: ltr;
+            display: inline-block;
+            min-width: 45px;
+        }
+
+        .instruction {
+            background-color: #0f172a80;
+            padding: 0.4rem 1rem;
+            border-radius: 2rem;
+            font-size: 0.95rem;
+            color: #cbd5e6;
+        }
+
+        /* بطاقة السؤال الرئيسية */
+        .question-card {
+            background: white;
+            border-radius: 2rem;
+            padding: 1.8rem;
+            margin-bottom: 1.8rem;
+            text-align: center;
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(33, 65, 123, 0.3);
+        }
+
+        .original-sentence {
+            background: #f8fafc;
+            padding: 1.2rem;
+            border-radius: 1.5rem;
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #0f172a;
+            font-family: 'Cairo', 'Amiri', monospace;
+            margin-bottom: 1rem;
+            box-shadow: inset 0 1px 4px #0001, 0 4px 8px #0001;
+            border-right: 6px solid #21417b;
+        }
+
+        .question-text {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin: 1rem 0 1.2rem 0;
+        }
+
+        /* خيارات الإجابة (أزرار) */
+        .options-area {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .option-btn {
+            background: #21417b;
+            border: none;
+            color: white;          /* كتابة الأزرار باللون الأبيض */
+            font-weight: bold;
+            font-size: 1.1rem;
+            padding: 0.9rem 1.7rem;
+            border-radius: 3rem;
+            cursor: pointer;
+            transition: transform 0.1s ease, background 0.2s;
+            font-family: inherit;
+            box-shadow: 0 4px 0 #0f2a4d;
+            flex: 1 0 auto;
+            min-width: 160px;
+        }
+
+        .option-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 1px 0 #0f2a4d;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            background: #2c569b;
+            transform: translateY(-2px);
+        }
+
+        .option-btn.correct-feedback {
+            background: #2e7d32;
+            box-shadow: 0 2px 0 #1b5e20;
+        }
+
+        .option-btn.wrong-feedback {
+            background: #b91c1c;
+            box-shadow: 0 2px 0 #7f1a1a;
+        }
+
+        .option-btn:disabled {
+            opacity: 0.7;
+            cursor: default;
+            transform: none;
+        }
+
+        /* زر التالي وإعادة المحاولة */
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1.2rem;
+            margin-top: 0.8rem;
+        }
+
+        .next-btn, .reset-btn {
+            background-color: #1e293b;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            font-weight: bold;
+            padding: 0.7rem 1.8rem;
+            border-radius: 3rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            box-shadow: 0 3px 0 #0f172a;
+        }
+
+        .next-btn:active, .reset-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 1px 0 #0f172a;
+        }
+
+        .next-btn:disabled, .reset-btn:disabled {
+            opacity: 0.5;
+            transform: none;
+            cursor: not-allowed;
+        }
+
+        /* رسالة النهاية */
+        .end-message {
+            text-align: center;
+            background: #ffea9ecc;
+            backdrop-filter: blur(8px);
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 2rem;
+            font-weight: bold;
+            font-size: 1.4rem;
+            color: #0f172a;
+        }
+
+        /* responsive */
+        @media (max-width: 680px) {
+            .game-container {
+                padding: 0.8rem;
+            }
+            .original-sentence {
+                font-size: 1.2rem;
+            }
+            .option-btn {
+                font-size: 0.9rem;
+                padding: 0.7rem 1rem;
+                min-width: 130px;
+            }
+            .question-text {
+                font-size: 1.1rem;
+            }
+            .info-panel {
+                justify-content: center;
+            }
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 1.8rem;
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+    <div class="game-header">
+        <h1>
+            <span>🎮</span> لعبة صيد الأفعال المضارعة <span>⚡</span>
+        </h1>
+    </div>
+
+    <div class="info-panel">
+        <div class="score-box">🏆 <span>النقاط:</span> <span class="score-value" id="scoreDisplay">0</span></div>
+        <div class="q-counter">📋 <span>السؤال:</span> <span class="current-q" id="currentQNumber">1</span><span> / <span id="totalQuestions">5</span></span></div>
+        <div class="timer-box">⏱️ <span>الوقت:</span> <span class="timer-value" id="timerValue">20</span><span> ث</span></div>
+        <div class="instruction">✨ اختر الفعل المضارع مع الإعراب الصحيح ✨</div>
+    </div>
+
+    <div class="question-card" id="questionCard">
+        <div class="original-sentence" id="sentenceText"></div>
+        <div class="question-text" id="questionPrompt">ما الفعل المضارع في الجملة؟ وما إعرابه؟</div>
+        <div class="options-area" id="optionsContainer"></div>
+        <div class="action-buttons">
+            <button class="reset-btn" id="resetGameBtn">🔄 إعادة اللعبة</button>
+            <button class="next-btn" id="nextBtn">➡️ السؤال التالي</button>
+        </div>
+    </div>
+    <div id="endMessageArea"></div>
+    <footer>⭐ اضغط على الإجابة الصحيحة قبل انتهاء الوقت! كل إجابة صحيحة = 10 نقاط ⭐</footer>
+</div>
+
+<script>
+    // --- البيانات: كل كائن يحتوي على الجملة، الفعل المضارع، الإعراب الصحيح، وخيارات الإعراب
+    const questionsData = [
+        {
+            sentence: "تُشاركُ المرأةُ الرجلَ في العملِ.",
+            correctVerb: "تُشاركُ",
+            correctIrab: "فعل مضارع مرفوع وعلامة رفعه الضمة الظاهرة",
+            options: [
+                "فعل مضارع مرفوع بالضمة",
+                "فعل مضارع منصوب بالفتحة",
+                "فعل مضارع مجزوم بالسكون",
+                "فعل مضارع مبني على الفتح"
+            ]
+        },
+        {
+            sentence: "تَسْهَرُ الطبيبتانِ ليلاً على رعايةِ المرضى.",
+            correctVerb: "تَسْهَرُ",
+            correctIrab: "فعل مضارع مرفوع وعلامة رفعه الضمة الظاهرة",
+            options: [
+                "فعل مضارع مرفوع بالألف لأنه من الأفعال الخمسة",
+                "فعل مضارع مرفوع بالضمة",
+                "فعل مضارع منصوب بالفتحة",
+                "فعل مضارع مجزوم بحذف النون"
+            ]
+        },
+        {
+            sentence: "يَنْظُمُ الشرطيُّ في واجبهِ.",
+            correctVerb: "يَنْظُمُ",
+            correctIrab: "فعل مضارع مرفوع وعلامة رفعه الضمة الظاهرة",
+            options: [
+                "فعل مضارع مرفوع بالضمة",
+                "فعل مضارع منصوب بالفتحة",
+                "فعل مضارع مجزوم بالسكون",
+                "فعل مضارع مبني على الفتح"
+            ]
+        },
+        {
+            sentence: "يُخْلِصُ خالدٌ في واجبهِ.",
+            correctVerb: "يُخْلِصُ",
+            correctIrab: "فعل مضارع مرفوع وعلامة رفعه الضمة الظاهرة",
+            options: [
+                "فعل مضارع مرفوع بالضمة",
+                "فعل مضارع منصوب بالفتحة",
+                "فعل مضارع مجزوم بالضمة",
+                "فعل مضارع مبني على السكون"
+            ]
+        },
+        {
+            sentence: "يُحافِظُ التلميذُ المجتهدُ على كتبِه ولوازمِه.",
+            correctVerb: "يُحافِظُ",
+            correctIrab: "فعل مضارع مرفوع وعلامة رفعه الضمة الظاهرة",
+            options: [
+                "فعل مضارع مرفوع بالضمة",
+                "فعل مضارع منصوب بالفتحة",
+                "فعل مضارع مجزوم بحذف حرف العلة",
+                "فعل مضارع مبني على الفتح"
+            ]
+        }
+    ];
+
+    // متغيرات اللعبة
+    let currentIndex = 0;            // 0-indexed
+    let score = 0;
+    let timerInterval = null;
+    let timeLeft = 20;
+    let isAnswered = false;           // منع الإجابة أكثر من مرة
+    let gameActive = true;            // هل اللعبة نشطة (لم تنتهِ)
+    let nextDisabled = true;          // زر التالي معطل حتى الإجابة
+    let totalQuestions = questionsData.length;
+
+    // عناصر DOM
+    const sentenceTextEl = document.getElementById("sentenceText");
+    const optionsContainer = document.getElementById("optionsContainer");
+    const scoreDisplay = document.getElementById("scoreDisplay");
+    const currentQNumberSpan = document.getElementById("currentQNumber");
+    const totalQuestionsSpan = document.getElementById("totalQuestions");
+    const timerValueSpan = document.getElementById("timerValue");
+    const nextBtn = document.getElementById("nextBtn");
+    const resetBtn = document.getElementById("resetGameBtn");
+    const endMessageArea = document.getElementById("endMessageArea");
+    const questionPrompt = document.getElementById("questionPrompt");
+
+    // --- أصوات (باستخدام Web Audio API لضمان العمل بدون ملفات خارجية، مع نغمات بسيطة)
+    function playCorrectSound() {
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.frequency.value = 880;
+            gain.gain.value = 0.3;
+            osc.type = "sine";
+            osc.start();
+            gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.5);
+            osc.stop(audioCtx.currentTime + 0.5);
+            // إعادة تشغيل السياق إذا كان معلقًا
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        } catch(e) { console.log("صوت غير مدعوم"); }
+    }
+
+    function playWrongSound() {
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.frequency.value = 440;
+            gain.gain.value = 0.25;
+            osc.type = "triangle";
+            osc.start();
+            gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.4);
+            osc.stop(audioCtx.currentTime + 0.4);
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        } catch(e) {}
+    }
+
+    function playTimerTickSound() {
+        // صوت خفيف للتذكير عند 5 ثوانٍ (اختياري ولكن ممتع)
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.frequency.value = 1200;
+            gain.gain.value = 0.1;
+            osc.type = "sine";
+            osc.start();
+            gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.15);
+            osc.stop(audioCtx.currentTime + 0.15);
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        } catch(e) {}
+    }
+
+    // إنهاء المؤقت
+    function stopTimer() {
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+    }
+
+    // بدء المؤقت للسؤال الحالي
+    function startTimer() {
+        if (timerInterval) stopTimer();
+        timeLeft = 20;
+        timerValueSpan.innerText = timeLeft;
+        timerInterval = setInterval(() => {
+            if (!gameActive || isAnswered) return; // إذا تمت الإجابة أو انتهت اللعبة لا نخصم
+            if (timeLeft <= 1) {
+                // انتهى الوقت دون إجابة
+                stopTimer();
+                if (!isAnswered && gameActive && currentIndex < totalQuestions) {
+                    // خسارة السؤال
+                    isAnswered = true;
+                    disableAllOptions(true);
+                    // إظهار رسالة خطأ على الأزرار (اختياري)
+                    playWrongSound();
+                    // إظهار الإجابة الصحيحة للمستخدم
+                    showCorrectAnswerFeedback();
+                    nextDisabled = false;
+                    nextBtn.disabled = false;
+                    // لا ننقص النقاط، فقط لا نضيف
+                    // ولكن نعطي رسالة
+                    const options = document.querySelectorAll('.option-btn');
+                    // تمييز الإجابة الصحيحة باللون الأخضر
+                    highlightCorrectOption();
+                }
+            } else {
+                timeLeft--;
+                timerValueSpan.innerText = timeLeft;
+                // إصدار صوت تيك عند آخر 3 ثوانٍ لإثارة الحماس
+                if (timeLeft <= 3 && timeLeft > 0) {
+                    playTimerTickSound();
+                }
+            }
+        }, 1000);
+    }
+
+    // تمييز الخيار الصحيح لونياً
+    function highlightCorrectOption() {
+        const currentQ = questionsData[currentIndex];
+        const btns = document.querySelectorAll('.option-btn');
+        btns.forEach(btn => {
+            if (btn.innerText === currentQ.correctIrab) {
+                btn.classList.add('correct-feedback');
+            } else if (!btn.disabled) {
+                btn.classList.add('wrong-feedback');
+            }
+        });
+    }
+
+    // عرض الإجابة الصحيحة كنص في مكان ما (رسالة مؤقتة) لتعليم الطالب
+    function showCorrectAnswerFeedback() {
+        const currentQ = questionsData[currentIndex];
+        // إضافة رسالة منبثقة صغيرة فوق الخيارات
+        let feedbackDiv = document.getElementById('tempFeedback');
+        if (!feedbackDiv) {
+            feedbackDiv = document.createElement('div');
+            feedbackDiv.id = 'tempFeedback';
+            feedbackDiv.style.margin = '10px auto';
+            feedbackDiv.style.padding = '8px';
+            feedbackDiv.style.borderRadius = '40px';
+            feedbackDiv.style.backgroundColor = '#ffea9e';
+            feedbackDiv.style.color = '#0f172a';
+            feedbackDiv.style.fontWeight = 'bold';
+            feedbackDiv.style.textAlign = 'center';
+            optionsContainer.parentNode.insertBefore(feedbackDiv, optionsContainer.nextSibling);
+        }
+        feedbackDiv.innerHTML = `✅ الإجابة الصحيحة: "${currentQ.correctVerb}" ⇨ ${currentQ.correctIrab} ✅`;
+        setTimeout(() => {
+            if (feedbackDiv) feedbackDiv.style.display = 'none';
+        }, 2000);
+        feedbackDiv.style.display = 'block';
+    }
+
+    // عرض السؤال الحالي
+    function loadQuestion() {
+        // مسح رسالة التغذية الراجعة المؤقتة إن وجدت
+        const fb = document.getElementById('tempFeedback');
+        if (fb) fb.style.display = 'none';
+        
+        if (currentIndex >= totalQuestions) {
+            endGame();
+            return;
+        }
+        isAnswered = false;
+        nextDisabled = true;
+        nextBtn.disabled = true;
+        gameActive = true;
+        const q = questionsData[currentIndex];
+        sentenceTextEl.innerText = q.sentence;
+        // تحديث عداد السؤال
+        currentQNumberSpan.innerText = currentIndex + 1;
+        totalQuestionsSpan.innerText = totalQuestions;
+
+        // إنشاء أزرار الخيارات
+        optionsContainer.innerHTML = '';
+        // خلط الخيارات قليلاً لجعل اللعبة شيقة (نخلط النسخة)
+        const shuffledOptions = [...q.options];
+        for (let i = shuffledOptions.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
+        }
+        shuffledOptions.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.innerText = opt;
+            btn.classList.add('option-btn');
+            btn.addEventListener('click', () => handleAnswer(opt, btn));
+            optionsContainer.appendChild(btn);
+        });
+        
+        // إعادة تشغيل المؤقت
+        stopTimer();
+        startTimer();
+    }
+
+    // معالجة الإجابة
+    function handleAnswer(selectedIrab, btnElement) {
+        if (!gameActive || isAnswered) return;
+        const currentQ = questionsData[currentIndex];
+        const isCorrect = (selectedIrab === currentQ.correctIrab);
+        
+        isAnswered = true;
+        stopTimer();
+        
+        // تعطيل جميع أزرار الخيارات
+        disableAllOptions(true);
+        
+        if (isCorrect) {
+            // إجابة صحيحة
+            score += 10;
+            scoreDisplay.innerText = score;
+            playCorrectSound();
+            // تمييز الزر الذي اختاره المستخدم كلون أخضر
+            btnElement.classList.add('correct-feedback');
+            // إظهار رسالة نجاح
+            showTemporaryMessage("🎉 إجابة ممتازة! +10 نقاط 🎉", "#2e7d32");
+        } else {
+            // إجابة خاطئة
+            playWrongSound();
+            btnElement.classList.add('wrong-feedback');
+            // تمييز الإجابة الصحيحة ليتعلم الطالب
+            highlightCorrectOption();
+            showCorrectAnswerFeedback();
+            showTemporaryMessage("❌ للأسف إجابة خاطئة! حاول مرة أخرى في السؤال القادم ❌", "#b91c1c");
+        }
+        // تفعيل زر التالي
+        nextDisabled = false;
+        nextBtn.disabled = false;
+    }
+    
+    function showTemporaryMessage(msg, bgColor) {
+        let msgDiv = document.getElementById('tempMsg');
+        if (!msgDiv) {
+            msgDiv = document.createElement('div');
+            msgDiv.id = 'tempMsg';
+            msgDiv.style.margin = '12px auto 0 auto';
+            msgDiv.style.padding = '10px';
+            msgDiv.style.borderRadius = '2rem';
+            msgDiv.style.fontWeight = 'bold';
+            msgDiv.style.textAlign = 'center';
+            msgDiv.style.fontSize = '1rem';
+            optionsContainer.parentNode.insertBefore(msgDiv, optionsContainer.nextSibling);
+        }
+        msgDiv.innerText = msg;
+        msgDiv.style.backgroundColor = bgColor;
+        msgDiv.style.color = 'white';
+        msgDiv.style.display = 'block';
+        setTimeout(() => {
+            if (msgDiv) msgDiv.style.display = 'none';
+        }, 1800);
+    }
+    
+    function disableAllOptions(disabled) {
+        const btns = document.querySelectorAll('.option-btn');
+        btns.forEach(btn => {
+            btn.disabled = disabled;
+        });
+    }
+    
+    // الانتقال للسؤال التالي
+    function nextQuestion() {
+        if (!gameActive) return;
+        if (nextDisabled) return;
+        // زيادة المؤشر
+        currentIndex++;
+        if (currentIndex < totalQuestions) {
+            // إعادة تحميل السؤال
+            loadQuestion();
+            // إعادة تمكين الأزرار
+            disableAllOptions(false);
+            // إزالة أي أصناف إضافية من الأزرار القديمة (ستُستبدل)
+        } else {
+            endGame();
+        }
+    }
+    
+    // نهاية اللعبة
+    function endGame() {
+        gameActive = false;
+        isAnswered = true;
+        stopTimer();
+        disableAllOptions(true);
+        nextBtn.disabled = true;
+        // عرض رسالة النهاية
+        let perfectBonus = (score === totalQuestions * 10) ? "🏅 بطل النحو! إجاباتك كلها صحيحة 🏅" : "💪 أحسنت! يمكنك تحسين مستواك بالمزيد من التدريب 💪";
+        endMessageArea.innerHTML = `<div class="end-message">🎯 انتهت اللعبة! 🎯 <br> مجموع نقاطك: ${score} من ${totalQuestions * 10} <br> ${perfectBonus} <br> 🌟 اضغط "إعادة اللعبة" للعب من جديد 🌟</div>`;
+        // إظهار جميع الإجابات الصحيحة للجمل كتلميذ تعليمي؟
+        // لعرض ملخص سريع
+    }
+    
+    // إعادة ضبط اللعبة بالكامل
+    function resetGame() {
+        stopTimer();
+        currentIndex = 0;
+        score = 0;
+        scoreDisplay.innerText = "0";
+        isAnswered = false;
+        gameActive = true;
+        nextDisabled = true;
+        nextBtn.disabled = true;
+        endMessageArea.innerHTML = '';
+        const tempMsg = document.getElementById('tempMsg');
+        if (tempMsg) tempMsg.style.display = 'none';
+        const tempFeed = document.getElementById('tempFeedback');
+        if (tempFeed) tempFeed.style.display = 'none';
+        // إعادة تحميل السؤال الأول
+        loadQuestion();
+        disableAllOptions(false);
+    }
+    
+    // أحداث الأزرار
+    nextBtn.addEventListener("click", nextQuestion);
+    resetBtn.addEventListener("click", () => {
+        resetGame();
+    });
+    
+    // تهيئة اللعبة
+    function init() {
+        totalQuestionsSpan.innerText = totalQuestions;
+        resetGame();
+    }
+    
+    init();
+</script>
+</body>
+</html>
